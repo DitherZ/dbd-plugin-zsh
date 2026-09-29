@@ -7,8 +7,9 @@
 # Master switch: true | false
 : ${DBD_ENABLED:=true}
 
-# Figlet font name (without .flf). Falls back to "standard" if not installed.
-: ${DBD_FONT:=lowerb}
+# Figlet font name (without .flf). "small" ships with figlet; if the chosen font
+# is not installed, "standard" is used instead.
+: ${DBD_FONT:=small}
 
 # Extra font directory to search first for figlet fonts. Empty = auto-detect
 # figlet's own font directory. Fonts fetched with `dbd-ff` are stored in
