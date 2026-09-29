@@ -103,5 +103,34 @@ HOME=$home zsh -f -c "source ${(q)PLUGIN}; dbd-ff $d/fonts.git" >/dev/null 2>&1
 [[ -f "$home/.local/share/dbd/fonts/nested.flf" ]] && ok "dbd-ff clones repos (recursive)" || bad "dbd-ff repo"
 rm -rf "$d" "$home"
 
+print "zoxide"
+if (( $+commands[zoxide] && $+commands[script] )); then
+    # zt <zshrc-lines> <shell-commands> [lines-before-plugin]: real interactive zsh on a pty; prints the banner header lines seen
+    zt() {
+        local h; h=$(mktemp -d); mkdir -p "$h/work/alpha-project" "$h/work/beta"
+        print -r -- "$3
+source ${(q)PLUGIN}
+DBD_CLEAR=false DBD_COLOR=none DBD_FONT=standard
+$1" > "$h/.zshrc"
+        printf '%s\nexit\n' "$2" | HOME="$h" TERM=xterm COLUMNS=80 script -qec "zsh -i" /dev/null 2>&1 \
+            | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' | tr -d '\r' | grep -E '^📂'
+        rm -rf "$h"
+    }
+    out=$(zt 'eval "$(zoxide init zsh)"' $'cd ~/work/alpha-project\ncd ~\nz alpha')
+    [[ "${${(f)out}[-1]}" == *alpha-project ]] && ok "z triggers the banner" || bad "z" "$out"
+    out=$(zt 'eval "$(zoxide init zsh)"' $'cd ~/work/alpha-project\ncd ~\nz alpha\nz -')
+    [[ "${${(f)out}[-1]}" != *alpha-project ]] && (( ${#${(f)out}} == 5 )) && ok "z - triggers the banner" || bad "z -" "$out"
+    out=$(zt 'eval "$(zoxide init zsh --cmd cd)"' $'cd ~/work/beta\ncd ~\ncd bet')
+    [[ "${${(f)out}[-1]}" == *beta ]] && ok "zoxide --cmd cd replacement triggers the banner" || bad "--cmd cd" "$out"
+    out=$(zt 'export _ZO_FZF_OPTS="--select-1 --exit-0"; eval "$(zoxide init zsh)"' $'cd ~/work/alpha-project\ncd ~\nzi alpha')
+    [[ "${${(f)out}[-1]}" == *alpha-project ]] && ok "zi triggers the banner" || bad "zi" "$out"
+    out=$(zt 'eval "$(zoxide init zsh)"' $'cd ~/work/alpha-project\ncd ~\nz nonexistent-xyz')
+    (( ${#${(f)out}} == 3 )) && ok "failed z prints no banner" || bad "failed z" "$out"
+    out=$(zt '' $'cd ~/work/alpha-project\ncd ~\nz alpha' 'eval "$(zoxide init zsh)"')
+    [[ "${${(f)out}[-1]}" == *alpha-project ]] && ok "works when zoxide is initialised before the plugin" || bad "init order" "$out"
+else
+    print "  skip (needs zoxide and script)"
+fi
+
 print "\n$pass passed, $fail failed"
 (( fail == 0 ))
