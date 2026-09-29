@@ -145,9 +145,9 @@ if (( $+commands[zoxide] && $+commands[script] )); then
 source ${(q)PLUGIN}
 DBD_CLEAR=false DBD_COLOR=none DBD_FONT=standard
 $1" > "$h/.zshrc"
-        # Feed one line at a time: input sent before zsh finishes starting up is lost on slow machines.
-        { sleep 1; local l; for l in "${(@f)2}"; do print -r -- "$l"; sleep 0.3; done; print exit; sleep 0.2; } \
-            | HOME="$h" TERM=xterm COLUMNS=80 script -qec "zsh -i" /dev/null 2>&1 \
+        # -d skips the system-wide rc files: on some hosts /etc/zsh/zshrc runs compinit,
+        # which can stop at an "insecure directories" prompt and swallow our first input line.
+        printf '%s\nexit\n' "$2" | HOME="$h" TERM=xterm COLUMNS=80 script -qec "zsh -d -i" /dev/null 2>&1 \
             | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' | tr -d '\r' | tee "$ZT_RAW" | grep -E '^📂'
         rm -rf "$h"
     }
