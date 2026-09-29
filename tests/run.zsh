@@ -137,7 +137,7 @@ rm -rf "$d" "$home"
 print "zoxide"
 if (( $+commands[zoxide] && $+commands[script] )); then
     ZT_RAW=$(mktemp)
-    zbad() { bad "$1" "${2//$'\n'/ | }  -- transcript: $(tail -12 "$ZT_RAW" | tr '\n' '|')"; }
+    zbad() { bad "$1" "${2//$'\n'/ | }  -- transcript: $(head -40 "$ZT_RAW" | tr '\n' '|')"; }
     # zt <zshrc-lines> <shell-commands> [lines-before-plugin]: real interactive zsh on a pty; prints the banner header lines seen
     zt() {
         local h; h=$(mktemp -d); mkdir -p "$h/work/alpha-project" "$h/work/beta"
