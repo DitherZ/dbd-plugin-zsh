@@ -65,6 +65,42 @@ _dbd_persist() {
     export "$var=$val"
 }
 
+# Prints text $2 in color $1 (a color name, or lolcat); $3 = "bold" for bold.
+_dbd_paint() {
+    local color="$1" text="$2" bold=""
+    [[ "$3" == bold ]] && bold=$'\e[1m'
+    if [[ "$color" == lolcat ]] && (( $+commands[lolcat] )); then
+        print -r -- "$text" | lolcat
+    else
+        _dbd_color_code "$color"
+        if [[ -n "$REPLY$bold" ]]; then print -r -- "${bold}${REPLY}${text}"$'\e[0m'; else print -r -- "$text"; fi
+    fi
+}
+
+# Renders name $1 with figlet font $2 from dir $3 at width $4 into REPLY, never
+# taller than one row of the font: a name that would wrap keeps its tail,
+# prefixed with "..". Returns 1 if figlet cannot draw it (non-ASCII names,
+# or nothing fits); the caller then falls back to plain text.
+_dbd_render() {
+    local name="$1" font="$2" dir="$3" width="$4" height out cand lo hi mid best=""
+    [[ "$name" == *[^[:ascii:]]* ]] && return 1
+    height=${${=$(head -1 "$dir/$font.flf" 2>/dev/null)}[2]}
+    [[ "$height" == <-> ]] || return 1
+
+    out=$(figlet -d "$dir" -f "$font" -w "$width" -- "$name" 2>/dev/null) || return 1
+    if (( ${#${(@f)out}} <= height )); then REPLY="$out"; return 0; fi
+
+    lo=1 hi=${#name}
+    while (( lo <= hi )); do
+        mid=$(( (lo + hi) / 2 ))
+        cand="..${name[-mid,-1]}"
+        out=$(figlet -d "$dir" -f "$font" -w "$width" -- "$cand" 2>/dev/null)
+        if (( ${#${(@f)out}} <= height )); then best="$out"; lo=$(( mid + 1 )); else hi=$(( mid - 1 )); fi
+    done
+    [[ -n "$best" ]] || return 1
+    REPLY="$best"
+}
+
 # -------------------------------------------------------------- banner ----
 print_dbd_banner() {
     [[ "$DBD_ENABLED" == true ]] || return 0
@@ -94,13 +130,10 @@ print_dbd_banner() {
     local i
     for ((i = 0; i < ${DBD_PADDING:-0}; i++)); do print; done
 
-    local art
-    art=$(figlet -d "$dir" -f "$font" -w "$width" -- "$name") || return 1
-    if [[ "$color" == lolcat ]] && (( $+commands[lolcat] )); then
-        print -r -- "$art" | lolcat
+    if _dbd_render "$name" "$font" "$dir" "$width"; then
+        _dbd_paint "$color" "$REPLY"
     else
-        _dbd_color_code "$color"
-        if [[ -n "$REPLY" ]]; then print -r -- "${REPLY}${art}"$'\e[0m'; else print -r -- "$art"; fi
+        _dbd_paint "$color" "$name" bold
     fi
 
     for ((i = 0; i < ${DBD_PADDING:-0}; i++)); do print; done
@@ -113,12 +146,7 @@ show_directory_contents() {
 
     print_dbd_banner
 
-    if [[ "$DBD_COLOR" == lolcat ]] && (( $+commands[lolcat] )); then
-        print -r -- "$header" | lolcat
-    else
-        _dbd_color_code "$DBD_COLOR"
-        print -r -- $'\e[1m'"${REPLY}${header}"$'\e[0m'
-    fi
+    _dbd_paint "$DBD_COLOR" "$header" bold
 
     print
     if command ls --color=always -d . >/dev/null 2>&1; then
@@ -250,7 +278,8 @@ dbd-config() {
 
 # --------------------------------------------------------------- hooks ----
 _dbd_on_chpwd() {
-    [[ "$DBD_ENABLED" == true && -o interactive && -t 1 ]] || return 0
+    # Skip subshells such as `(cd dir && make)`.
+    [[ "$DBD_ENABLED" == true && -o interactive && -t 1 && $ZSH_SUBSHELL == 0 ]] || return 0
     dbs
 }
 

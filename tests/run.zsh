@@ -29,7 +29,7 @@ check "config parses"  zsh -n "$ROOT/dbd-config.zsh"
 
 print "loading"
 out=$(run 'print -r -- $DBD_FONT/$DBD_COLOR/$DBD_WIDTH')
-[[ "$out" == "lowerb/lolcat/auto" ]] && ok "defaults applied" || bad "defaults applied" "$out"
+[[ "$out" == "small/lolcat/auto" ]] && ok "defaults applied" || bad "defaults applied" "$out"
 out=$(HOME=$(mktemp -d) DBD_COLOR=red zsh -f -c "source ${(q)PLUGIN}; print \$DBD_COLOR")
 [[ "$out" == red ]] && ok "env overrides defaults" || bad "env overrides defaults" "$out"
 out=$(cd /tmp && run 'print -r -- $DBD_PLUGIN_DIR')
@@ -49,6 +49,25 @@ out=$(run 'DBD_COLOR=none DBD_CLEAR=false DBD_RANDOM_FONT=true DBD_RANDOM_COLOR=
 out=$(run 'DBD_COLOR=none DBD_CLEAR=false; cd /; print_dbd_banner' | grep -c .)
 (( out > 0 )) && ok "works in / (empty basename)" || bad "root dir"
 
+out=$(run 'f=$(figlet -I2)/$DBD_FONT.flf; [[ -f $f ]] && print shipped')
+[[ "$out" == shipped ]] && ok "default font ships with figlet" || bad "default font ships with figlet" "$out"
+
+d=$(mktemp -d)/"café-日本"; mkdir -p "$d"
+out=$(run "DBD_COLOR=none DBD_CLEAR=false; cd ${(q)d}; print_dbd_banner" | sed 's/\x1b\[[0-9;]*m//g')
+[[ "$out" == "café-日本" ]] && ok "non-ASCII name falls back to plain text" || bad "non-ASCII name" "$out"
+rm -rf "${d:h}"
+
+d=$(mktemp -d)/short; mkdir -p "$d"
+out=$(run "DBD_COLOR=none DBD_CLEAR=false DBD_FONT=standard; cd ${(q)d}; print_dbd_banner")
+[[ "$out" == "$(figlet -f standard -w 100 short)" ]] && ok "short name is rendered unchanged" || bad "short name" "$out"
+rm -rf "${d:h}"
+
+d=$(mktemp -d)/a-very-long-directory-name-for-testing-things-that-wrap; mkdir -p "$d"
+out=$(run "DBD_COLOR=none DBD_CLEAR=false DBD_FONT=standard COLUMNS=80 DBD_WIDTH=80; cd ${(q)d}; print_dbd_banner")
+n=${#${(@f)out}}
+(( n > 0 && n <= 6 )) && ok "long name is truncated to one banner row ($n lines)" || bad "long name height" "$n lines"
+rm -rf "${d:h}"
+
 print "listing"
 d=$(mktemp -d); touch "$d/alpha" "$d/.hidden"
 out=$(run "DBD_COLOR=cyan DBD_CLEAR=false; cd ${(q)d}; dbs")
@@ -66,6 +85,18 @@ out=$(run 'print -r -- ${chpwd_functions} ${precmd_functions}')
 out=$(run 'DBD_COLOR=none DBD_CLEAR=false; _dbd_initial_banner </dev/null; print -r -- $precmd_functions')
 [[ "$out" != *_dbd_initial_banner* ]] && ok "initial-banner hook removes itself" || bad "self-removal" "$out"
 rm -rf "$d"
+
+print "subshell"
+if (( $+commands[script] )); then
+    d=$(mktemp -d)
+    n=$(script -qec "zsh -f -i -c 'source ${(q)PLUGIN}; DBD_CLEAR=false; cd ${(q)d}'" /dev/null 2>&1 | grep -c '📂')
+    (( n == 1 )) && ok "cd in the shell draws a banner" || bad "top-level cd" "$n banners"
+    n=$(script -qec "zsh -f -i -c 'source ${(q)PLUGIN}; DBD_CLEAR=false; (cd ${(q)d})'" /dev/null 2>&1 | grep -c '📂')
+    (( n == 0 )) && ok "cd in a subshell draws nothing" || bad "subshell cd" "$n banners"
+    rm -rf "$d"
+else
+    print "  skip (needs script)"
+fi
 
 print "dbd-config"
 out=$(run 'dbd-config set color red && dbd-config set random on && dbd-config set padding 2 && dbd-config set width 90 && dbd-config set clear off; print $DBD_COLOR $DBD_RANDOM_FONT $DBD_PADDING $DBD_WIDTH $DBD_CLEAR')
@@ -88,7 +119,7 @@ print "fonts"
 out=$(run 'dbd-list-fonts' | grep -c standard)
 (( out > 0 )) && ok "dbd-list-fonts lists installed fonts" || bad "dbd-list-fonts"
 out=$(run 'print 3 | dbd-font >/dev/null; print $DBD_FONT')
-[[ -n "$out" && "$out" != lowerb ]] && ok "interactive dbd-font selection" || bad "interactive font" "$out"
+[[ -n "$out" && "$out" != small ]] && ok "interactive dbd-font selection" || bad "interactive font" "$out"
 d=$(mktemp -d); cp "$(figlet -I2)/standard.flf" "$d/mycustom.flf"
 home=$(mktemp -d)
 out=$(HOME=$home zsh -f -c "source ${(q)PLUGIN}; dbd-ff file://$d/mycustom.flf; print_dbd_banner" 2>&1 | tail -3)

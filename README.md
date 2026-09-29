@@ -79,7 +79,9 @@ Saved settings live in `${XDG_CONFIG_HOME:-~/.config}/dbd/settings.zsh`. You can
 
 ### Fonts
 
-Fonts are searched in this order: `~/.local/share/dbd/fonts` (where `dbd-ff` installs), `$DBD_FONT_DIR` (optional), then figlet's own font directory. If the configured font is missing, `standard` is used. Only figlet `.flf` fonts are supported.
+Fonts are searched in this order: `~/.local/share/dbd/fonts` (where `dbd-ff` installs), `$DBD_FONT_DIR` (optional), then figlet's own font directory. The default font is `small`, which ships with figlet; if the configured font is missing, `standard` is used. Only figlet `.flf` fonts are supported.
+
+The banner never takes more than one row of art: a name too long for the terminal keeps its tail (`..long-name`), and names figlet can't draw (non-ASCII such as `café`) are shown as plain bold text. `cd` inside a subshell, e.g. `(cd dir && make)`, draws nothing.
 
 ```zsh
 dbd-ff https://github.com/xero/figlet-fonts.git
