@@ -44,6 +44,10 @@ git clone https://github.com/DitherZ/dpd-plugin ~/.dbd-plugin
 echo 'source ~/.dbd-plugin/dbd-plugin.plugin.zsh' >> ~/.zshrc
 ```
 
+## zoxide
+
+Works with [zoxide](https://github.com/ajeetdsouza/zoxide) out of the box: `z`, `zi`, `z -` and `eval "$(zoxide init zsh --cmd cd)"` all show the banner, whichever order you load them in. A `z` that finds no match doesn't change directory, so no banner is drawn.
+
 ## Commands
 
 | Command | What it does |
