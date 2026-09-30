@@ -1,33 +1,38 @@
-# DBD (Directory Banner Display) - default settings
-#
-# Each value is only a default: anything you export before the plugin loads
-# (e.g. in ~/.zshrc) wins, and so does anything saved with `dbd-config set`
-# (stored in ${XDG_CONFIG_HOME:-~/.config}/dbd/settings.zsh).
+# ═══ DBD SYSTEM PLUGIN — CONFIGURATION ══════════════════════════════════════ #
+# ── dbd-config.zsh ── #
+# Author : DitherZ/Blackflame
+# Version: 2.0.0
+# ─────────────────────────────────────────────────────────────────────────────
 
-# Master switch: true | false
-: ${DBD_ENABLED:=true}
+# ── Plugin Root ── #
+export DBD_PLUGIN_DIR="$HOME/.oh-my-zsh/custom/plugins/dbd-plugin"
 
-# Figlet font name (without .flf). "small" ships with figlet; if the chosen font
-# is not installed, "standard" is used instead.
-: ${DBD_FONT:=small}
+# ── Font Storage Directory ── #
+export DBD_FONT_DIR="/usr/local/share/figlet"
 
-# Extra font directory to search first for figlet fonts. Empty = auto-detect
-# figlet's own font directory. Fonts fetched with `dbd-ff` are stored in
-# ${XDG_DATA_HOME:-~/.local/share}/dbd/fonts and always searched.
-: ${DBD_FONT_DIR:=}
+# ── Default Font (must match a valid .flf in $DBD_FONT_DIR) ── #
+export DBD_FONT="lowerb"
 
-# Banner color: red green yellow blue purple cyan orange lolcat none
-: ${DBD_COLOR:=lolcat}
+# ── Banner Color Mode ── #
+# Options: gradient | lolcat | red | green | yellow | blue | purple | cyan | orange
+export DBD_COLOR="gradient"
 
-# Pick a random font / color on every banner: true | false
-: ${DBD_RANDOM_FONT:=false}
-: ${DBD_RANDOM_COLOR:=false}
+# ── Padding: blank lines above/below banner ── #
+export DBD_PADDING="0"
 
-# Blank lines above and below the banner
-: ${DBD_PADDING:=0}
+# ── Random Font Mode: picks a random font on each cd ── #
+export DBD_RANDOM_FONT="false"
 
-# Banner width in columns, or "auto" to use the terminal width
-: ${DBD_WIDTH:=auto}
+# ── Random Color Mode: picks a random color on each cd ── #
+export DBD_RANDOM_COLOR="false"
 
-# Clear the screen before drawing the banner: true | false
-: ${DBD_CLEAR:=true}
+# ── Master Switch: false = plugin does nothing ── #
+export DBD_ENABLED="true"
+
+# ── Banner Width: passed to figlet -w ── #
+export DBD_WIDTH="200"
+
+# ── Clear Terminal on cd: true = runs clear before banner ── #
+export DBD_CLEAR="false"
+
+# ─────────────────────────────────────────────────────────────────────────────
